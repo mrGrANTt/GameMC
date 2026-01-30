@@ -1,19 +1,38 @@
 package com.fanya.gamemc.minigames._2048;
 
 import com.fanya.gamemc.data.GameRecords;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
-import net.minecraft.client.MinecraftClient;
+import com.fanya.gamemc.minigames.MiniGame;
+import com.fanya.gamemc.screen.GameScreen;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
-public class Game2048Screen extends Screen {
+public class Game2048Screen extends GameScreen {
+    public static class Game2048MiniGame implements MiniGame {
+        @Override
+        public Text getMiniGameTittle() {
+            return Text.translatable("game.2048.title");
+        }
+
+        @Override
+        public Screen getMiniGameScreen(Screen parent) {
+            return new Game2048Screen(parent);
+        }
+
+        @Override
+        public Identifier getIcon() {
+            return BLOCK_TEXTURES[4];
+        }
+
+        @Override
+        public Text getDescription() {
+            return Text.translatable("game.2048.description");
+        }
+    }
 
     private static final Identifier[] BLOCK_TEXTURES = buildTextures();
 
@@ -33,7 +52,6 @@ public class Game2048Screen extends Screen {
         return ids;
     }
 
-    private final Screen parent;
     private Game2048 game;
 
     private int playX, playY, cellSize, spacing, playWidth, playHeight;
@@ -42,49 +60,35 @@ public class Game2048Screen extends Screen {
     private int tickCounter = 0;
 
     public Game2048Screen(Screen parent) {
-        super(Text.translatable("game.2048.title"));
-        this.parent = parent;
+        super(Text.translatable("game.2048.title"), parent);
         game = new Game2048();
+
+        addUpButton(Text.translatable("game.2048.info.pause"), b -> {
+            if (game != null) game.togglePause();
+            assert game != null;
+            b.setMessage(game.getState() == Game2048.State.PAUSED
+                    ? Text.translatable("game.2048.info.resume")
+                    : Text.translatable("game.2048.info.pause"));
+        });
     }
 
     @Override
     protected void init() {
-
+        super.init();
         cellSize = 23;
         spacing = 3;
 
         playWidth = game.getCols() * (cellSize + spacing) - spacing;
         playHeight = game.getRows() * (cellSize + spacing) - spacing;
 
-        int btnWidth = 100;
-        int btnHeight = 20;
-        int spacingBtn = 10;
-
-        int totalBtnWidth = btnWidth * 3 + spacingBtn * 2;
-        int startX = (this.width - totalBtnWidth) / 2;
-        int btnY = 3;
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("game.2048.info.back"), b -> {
-            if (client != null) client.setScreen(parent);
-        }).dimensions(startX, btnY, btnWidth, btnHeight).build());
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("game.2048.info.new_game"), b -> game.reset()).dimensions(startX + btnWidth + spacingBtn, btnY, btnWidth, btnHeight).build());
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("game.2048.info.pause"), b -> {
-            if (game != null) game.togglePause();
-            assert game != null;
-            b.setMessage(game.getState() == Game2048.State.PAUSED
-                    ? Text.translatable("game.2048.info.resume")
-                    : Text.translatable("game.2048.info.pause"));
-        }).dimensions(startX + 2 * (btnWidth + spacingBtn), btnY, btnWidth, btnHeight).build());
-
-        playX = startX;
+        playX = (this.width - getTotalUpBtnWidth()) / 2;
         playY = (this.height - playHeight) / 2;
         panelX = playX + playWidth + 20;
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        super.render(context, mouseX, mouseY, delta);
         if (game.getState() == Game2048.State.RUNNING) {
             tickCounter++;
             int dropInterval = 50;
@@ -189,23 +193,18 @@ public class Game2048Screen extends Screen {
     public boolean keyPressed(KeyInput input) {
         if (game.getState() == Game2048.State.RUNNING || game.getState() == Game2048.State.PAUSED) {
             switch (input.key()) {
-                case GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_LEFT -> game.move(-1);
-                case GLFW.GLFW_KEY_D, GLFW.GLFW_KEY_RIGHT -> game.move(1);
-                case GLFW.GLFW_KEY_S, GLFW.GLFW_KEY_DOWN -> game.dropStep();
-                case GLFW.GLFW_KEY_SPACE -> game.hardDrop();
-                case GLFW.GLFW_KEY_R -> game.reset();
-                case GLFW.GLFW_KEY_P -> game.togglePause(); // кейбинд паузы
-                case GLFW.GLFW_KEY_ESCAPE -> {
-                    if (client != null) client.setScreen(parent);
-                }
+                case GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_LEFT: game.move(-1); return true;
+                case GLFW.GLFW_KEY_D, GLFW.GLFW_KEY_RIGHT: game.move(1); return true;
+                case GLFW.GLFW_KEY_S, GLFW.GLFW_KEY_DOWN: game.dropStep(); return true;
+                case GLFW.GLFW_KEY_SPACE: game.hardDrop(); return true;
+                case GLFW.GLFW_KEY_P: game.togglePause(); return true; // кейбинд паузы
             }
-            return true;
         }
         return super.keyPressed(input);
     }
 
     @Override
-    public boolean shouldPause() {
-        return false; // игра не ставится на паузу при открытии меню
+    protected void reset() {
+        game.reset();
     }
 }

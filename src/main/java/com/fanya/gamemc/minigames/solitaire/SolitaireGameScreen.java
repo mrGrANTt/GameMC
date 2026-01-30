@@ -2,22 +2,43 @@ package com.fanya.gamemc.minigames.solitaire;
 
 import com.fanya.gamemc.GameMC;
 import com.fanya.gamemc.data.GameRecords;
+import com.fanya.gamemc.minigames.MiniGame;
 import com.fanya.gamemc.minigames.solitaire.subclass.SolitaireCard;
+import com.fanya.gamemc.screen.GameButtonWidget;
+import com.fanya.gamemc.screen.GameScreen;
 import com.fanya.gamemc.util.CustomSounds;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.lwjgl.glfw.GLFW;
 
-public class SolitaireGameScreen extends Screen {
+public class SolitaireGameScreen extends GameScreen {
+    public static class SolitaireMiniGame implements MiniGame {
+        @Override
+        public Text getMiniGameTittle() {
+            return Text.translatable("game.solitaire.title");
+        }
+
+        @Override
+        public Screen getMiniGameScreen(Screen parent) {
+            return new SolitaireGameScreen(parent);
+        }
+
+        @Override
+        public Identifier getIcon() {
+            return Identifier.of(GameMC.MOD_ID, "textures/gui/game_icons/solitaire.png");
+        }
+
+        @Override
+        public Text getDescription() {
+            return Text.translatable("game.solitaire.description");
+        }
+    }
 
     private static final Identifier[][] CARD_TEXTURES = parsTextures();
     private static final Identifier BACK_CARD = Identifier.of(GameMC.MOD_ID, "textures/gui/suits/card.png");
@@ -31,10 +52,10 @@ public class SolitaireGameScreen extends Screen {
         return arr;
     }
 
-    private final Screen parent;
+    private GameButtonWidget soundButton;
     private SolitaireGame game;
 
-    private int cardSizeX, cardSizeY, spacingX, spacingY, playWidth, playHeight, playStartX, playStartY, btnWidth, btnHeight, spacingBtn;
+    private int cardSizeX, cardSizeY, spacingX, spacingY, playWidth, playHeight, playStartX, playStartY;
 
     private int moveCounter = 0,
             bestScore;
@@ -42,12 +63,21 @@ public class SolitaireGameScreen extends Screen {
     private double deltaX = 0, deltaY = 0;
 
     public SolitaireGameScreen(Screen parent) {
-        super(Text.translatable("game.solitaire.title"));
-        this.parent = parent;
+        super(Text.translatable("game.solitaire.title"), parent);
+
+        soundButton = addUpButton(Text.translatable("game.solitaire.info.silent", Text.translatable("game.solitaire.info.silent.off")), b -> {
+            PLAY_SOUND = !PLAY_SOUND;
+            b.setMessage(Text.translatable("game.solitaire.info.silent",
+                    PLAY_SOUND ? Text.translatable("game.solitaire.info.silent.off") : Text.translatable("game.solitaire.info.silent.on")));
+        });
     }
 
     @Override
     protected void init() {
+        soundButton.setText(Text.translatable("game.solitaire.info.silent",
+                Text.translatable(
+                        PLAY_SOUND ? "game.solitaire.info.silent.off" :  "game.solitaire.info.silent.on")));
+        super.init();
         bestScore = GameRecords.getInstance().getBestScore("solitaire");
         if(game == null) game = new SolitaireGame();
 
@@ -59,33 +89,12 @@ public class SolitaireGameScreen extends Screen {
         playWidth = 7 * (cardSizeX + spacingX) + spacingX; // 304
         playHeight = 22 * spacingY + 2 * cardSizeY; // 316
 
-        btnWidth = 100;
-        btnHeight = 20;
-        spacingBtn = 10;
-
         playStartX = Math.max((width - playWidth) / 2, 0);
-        playStartY = Math.min((height - playHeight - btnHeight - spacingBtn) * 2 / 3 + btnHeight + spacingBtn, height - playHeight);
-
-        int totalBtnWidth = btnWidth * 3 + spacingBtn * 2;
-        int startX = (this.width - totalBtnWidth) / 2;
-        int btnY = 3;
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("game.solitaire.info.back"), b -> {
-            if (client != null) client.setScreen(parent);
-        }).dimensions(startX, btnY, btnWidth, btnHeight).build());
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("game.solitaire.info.new_game"), b -> reset()
-            ).dimensions(startX + btnWidth + spacingBtn, btnY, btnWidth, btnHeight).build());
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("game.solitaire.info.silent",
-                PLAY_SOUND ? Text.translatable("game.solitaire.info.silent.off") : Text.translatable("game.solitaire.info.silent.on")), b -> {
-            PLAY_SOUND = !PLAY_SOUND;
-            b.setMessage(Text.translatable("game.solitaire.info.silent",
-                    PLAY_SOUND ? Text.translatable("game.solitaire.info.silent.off") : Text.translatable("game.solitaire.info.silent.on")));
-        }).dimensions(startX + (btnWidth + spacingBtn)*2, btnY, btnWidth, btnHeight).build());
+        playStartY = Math.min((height - playHeight - GameButtonWidget.btnHeight - GameButtonWidget.spacingBtn) * 2 / 3 + GameButtonWidget.btnHeight + GameButtonWidget.spacingBtn, height - playHeight);
     }
 
-    private void reset() {
+    @Override
+    protected void reset() {
         playSound(CustomSounds.SWAP_GAME_CARD, 1f, 1f);
         game.reset();
         moveCounter = 0;
@@ -242,23 +251,6 @@ public class SolitaireGameScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
-        switch (input.key()) {
-            case GLFW.GLFW_KEY_R -> {
-                reset();
-                return true;
-            }
-            case GLFW.GLFW_KEY_ESCAPE -> {
-                if (client != null) {
-                    client.setScreen(parent);
-                    return true;
-                }
-            }
-        }
-        return super.keyPressed(input);
-    }
-
-    @Override
     public boolean mouseClicked(Click click, boolean doubled) {
         if(game.getState() == SolitaireGame.State.RUNNING) {
             if (click.button() == 1) {
@@ -323,11 +315,6 @@ public class SolitaireGameScreen extends Screen {
         deltaX = 0;
         deltaY = 0;
         return super.mouseReleased(click);
-    }
-
-    @Override
-    public boolean shouldPause() {
-        return false; // игра не ставится на паузу при открытии меню
     }
 
     public int getCardByMouse(double mouseX, double mouseY) {

@@ -1,210 +1,209 @@
 package com.fanya.gamemc.screen;
 
 import com.fanya.gamemc.GameMC;
-import com.fanya.gamemc.minigames._2048.Game2048Screen;
-import com.fanya.gamemc.minigames.simon.SimonGameScreen;
-import com.fanya.gamemc.minigames.snake.SnakeSizeSelectScreen;
-import com.fanya.gamemc.minigames.solitaire.SolitaireGameScreen;
+import com.fanya.gamemc.minigames.MiniGame;
+import com.fanya.gamemc.util.GameColorPalette;
 import com.fanya.gamemc.util.VersionChecker;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.screen.ScreenTexts;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.random.Random;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class GameSelectionScreen extends Screen {
+    public static final Identifier GAME_MC_LOGO = Identifier.of(GameMC.MOD_ID, "textures/gui/game_mc.png");
+    private static final List<MiniGame> GAME_BUTTONS = new ArrayList<>();
+
+    public static void pushMiniGame(MiniGame game) {if (!GAME_BUTTONS.contains(game)) GAME_BUTTONS.add(game);}
+    public static void popMiniGame(MiniGame game) {GAME_BUTTONS.remove(game);}
+
     private final Screen parent;
-    private final List<ButtonWidget> gameButtons = new ArrayList<>();
-    private ButtonWidget backButton;
-    private int scrollOffset = 0;
-
-    private int panelX;
-    private int panelY;
-    private final int panelWidth = 350;
-    private final int panelHeight = 220;
-    private int listAreaX, listAreaY, listAreaWidth, listAreaHeight;
-
-    private final int buttonWidth = 200;
-    private final int buttonHeight = 20;
-    private final int buttonGap = 8;
+    private final List<GameWidget> games;
+    private ButtonWidget backButton, randomGameButton;
+    private ScrollbarWidget scrollbar;
+    private double scrollingListY = 0;
+    private double maxScrollingListY;
+    private GameWidget selected = null;
+    private GameWidget hovered = null;
 
     private final VersionChecker versionChecker = new VersionChecker();
 
     public GameSelectionScreen(Screen parent) {
         super(Text.translatable("menu.gamemc.select"));
         this.parent = parent;
+        games = new ArrayList<>();
+
+        for(MiniGame game : GAME_BUTTONS) {
+            GameWidget gameWidget = new GameWidget(0,0,game);
+            games.add(gameWidget);
+        }
+        versionChecker.fetchLatestVersionAsync();
     }
 
     @Override
     protected void init() {
         super.init();
+        scrollingListY = 0;
 
-        versionChecker.fetchLatestVersionAsync();
-
-        panelX = this.width / 2 - panelWidth / 2;
-        panelY = this.height / 2 - panelHeight / 2;
-
-        listAreaX = panelX + 16;
-        listAreaY = panelY + 58;
-        listAreaWidth = panelWidth - 32;
-
-        listAreaHeight = panelHeight - 76 - buttonHeight - 12;
-
-        int centerX = this.width / 2 - buttonWidth / 2;
-
-        gameButtons.clear();
-        gameButtons.add(ButtonWidget.builder(
-                Text.translatable("menu.gamemc.button.snakegame"),
-                button -> setScreenIfPresent(new SnakeSizeSelectScreen(this))
-        ).dimensions(centerX, 0, buttonWidth, buttonHeight).build());
-
-        gameButtons.add(ButtonWidget.builder(
-                Text.translatable("menu.gamemc.button.simon"),
-                button -> setScreenIfPresent(new SimonGameScreen(this))
-        ).dimensions(centerX, 0, buttonWidth, buttonHeight).build());
-
-        gameButtons.add(ButtonWidget.builder(
-                Text.translatable("menu.gamemc.button.2048"),
-                button -> setScreenIfPresent(new Game2048Screen(this))
-        ).dimensions(centerX, 0, buttonWidth, buttonHeight).build());
-
-        gameButtons.add(ButtonWidget.builder(
-                Text.translatable("menu.gamemc.button.solitaire"),
-                button -> setScreenIfPresent(new SolitaireGameScreen(this))
-        ).dimensions(centerX, 0, buttonWidth, buttonHeight).build());
-
-        int backBtnX = this.width / 2 - buttonWidth / 2;
-        int backBtnY = panelY + panelHeight - 18 - buttonHeight;
-        backButton = ButtonWidget.builder(
-                ScreenTexts.BACK,
-                button -> setScreenIfPresent(this.parent)
-        ).dimensions(backBtnX, backBtnY, buttonWidth, buttonHeight).build();
-    }
-
-    private void setScreenIfPresent(Screen scr) {
-        if (this.client != null)
-            this.client.setScreen(scr);
+        //addDrawableChild(GameButtonWidget.createButton(0,0,10,10, Text.of("o"), (b) -> client.setScreen(new GameSelectionScreen_old(this))));
+        backButton = GameButtonWidget.createButton(0,0, ScreenTexts.BACK, (b) -> client.setScreen(parent));
+        randomGameButton = GameButtonWidget.createButton(0,0, Text.translatable("menu.gamemc.random"),
+                (b) -> games.get(Random.create().nextBetweenExclusive(0, games.size())).onPress(null));
+        scrollbar = new ScrollbarWidget(0,0, 8, 101, 100, 0, GameColorPalette.BACK_PANEL, GameColorPalette.BACK_PANEL_HOVER_COLOR);
+        addSelectableChild(backButton);
+        addSelectableChild(randomGameButton);
+        addSelectableChild(scrollbar);
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.renderPanoramaBackground(context, delta);
+    public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+        super.render(context, mouseX, mouseY, deltaTicks);
 
-        context.fillGradient(0, 0, this.width, this.height, 0xC0101010, 0xD0101010);
+        hovered = null;
 
-        context.fill(panelX + 4, panelY + 4, panelX + panelWidth + 4, panelY + panelHeight + 4, 0x80000000);
-        context.fillGradient(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xE0101010, 0xE0202020);
+        int scrollingSpeed = 20;
+        int spacingX = 10,
+                spacingY = 20;
 
-        context.fill(panelX, panelY, panelX + panelWidth, panelY + 2, 0xFF1a8c99);
-        context.fill(panelX, panelY + panelHeight - 2, panelX + panelWidth, panelY + panelHeight, 0xFF1a8c99);
-        context.fill(panelX, panelY, panelX + 2, panelY + panelHeight, 0xFF1a8c99);
-        context.fill(panelX + panelWidth - 2, panelY, panelX + panelWidth, panelY + panelHeight, 0xFF1a8c99);
+        int borderSpacingX = 10;
+        int borderSpacingY = 140;
+        int listStartY = borderSpacingY + (int) scrollingListY* scrollingSpeed;
+        int countInLien = (width-GameButtonWidget.btnWidth-spacingX-borderSpacingX*2) / (GameWidget.PANEL_WIDTH + spacingX);
+        if (countInLien > games.size()) countInLien = games.size();
+        borderSpacingX = (width-GameButtonWidget.btnWidth-spacingX - countInLien*(GameWidget.PANEL_WIDTH+spacingX))/2;
+        int liensCount = 0;
+        int columnCount = 0;
+        int startX = borderSpacingX+GameButtonWidget.btnWidth+spacingX;
 
-        context.fill(panelX + 40, panelY + 45, panelX + panelWidth - 40, panelY + 47, 0x60FFFFFF);
-
-        String title = this.textRenderer.trimToWidth(Text.translatable("menu.gamemc.title").getString(), panelWidth);
-        context.drawText(this.textRenderer, Text.literal(title),
-                this.width / 2 - this.textRenderer.getWidth(title) / 2, panelY + 15, 0xFF00FFFF, true);
-
-        String desc = this.textRenderer.trimToWidth(Text.translatable("menu.gamemc.description").getString(), panelWidth);
-        context.drawText(this.textRenderer, Text.literal(desc),
-                this.width / 2 - this.textRenderer.getWidth(desc) / 2, panelY + 30, 0xFFAAAAAA, true);
+        // Logo
+        int textureWidth = 443,
+                textureHeight = 130;
+        double scaleFactor = 0.7;
+        int logoX = (width - startX - borderSpacingX - (int) (textureWidth*scaleFactor)) / 2,
+                logoY = listStartY - (int) (textureHeight*scaleFactor) - spacingY;
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, GAME_MC_LOGO, startX+logoX, logoY, 0, 0, (int) (textureWidth*scaleFactor), (int) (textureHeight*scaleFactor), (int) (textureWidth*scaleFactor), (int) (textureHeight*scaleFactor));
 
 
+        // Game list
+        for(GameWidget game : games) {
+            game.setPosition(startX + (spacingX + GameWidget.PANEL_WIDTH) * liensCount, listStartY + (spacingY + GameWidget.PANEL_HEIGHT) * columnCount);
+            if(game.isOnScreen(width,height)) {
+                game.setSelected(selected == game);
+                if (game.isHovered()) hovered = game;
+                game.render(context, mouseX, mouseY, deltaTicks);
+            }
+            if(++liensCount >= countInLien) {
+                columnCount++;
+                liensCount = 0;
+            }
+        }
+
+        maxScrollingListY = (double) ((columnCount + 1) * (GameWidget.PANEL_HEIGHT + spacingY) + borderSpacingY - height) / scrollingSpeed;
+
+        // scrollbar
+        if(maxScrollingListY*scrollingSpeed > height/4) {
+            int scrollbarSpacingY = 10;
+            int scrollbarWidth = scrollbar.getWidth();
+            int scrollbarHeight = height-scrollbarSpacingY*2;
+            int scrollbarStartX = width - scrollbarWidth - (borderSpacingX + scrollbarWidth) / 2;
+
+            scrollbar.setMaxValue(maxScrollingListY);
+            scrollingListY = -scrollbar.getValue();
+            scrollbar.setDimensionsAndPosition(scrollbarWidth, scrollbarHeight, scrollbarStartX, scrollbarSpacingY);
+            scrollbar.render(context, mouseX, mouseY, deltaTicks);
+        }
+
+
+        // buttons
+        int buttonSpacingY = 1;
+        int buttonsY = height-GameButtonWidget.btnHeight*3-buttonSpacingY;
+        int buttonsX = (borderSpacingX+spacingX)/2;
+
+        randomGameButton.setPosition(buttonsX, buttonsY);
+        randomGameButton.render(context, mouseX, mouseY, deltaTicks);
+        backButton.setPosition(buttonsX, buttonsY+buttonSpacingY+GameButtonWidget.btnHeight);
+        backButton.render(context, mouseX, mouseY, deltaTicks);
+
+        // Info panel TODO: text scrolling maybe
+        int infoPanelStartX = buttonsX;
+        int infoPanelStartY = spacingY;
+        int infoPanelEndX = buttonsX + GameButtonWidget.btnWidth;
+        int infoPanelEndY = buttonsY-spacingY;
+
+        Text text;
+        if (selected != null) text = selected.getMiniGame().getDescription();
+        else if (hovered != null) text = hovered.getMiniGame().getDescription();
+        else text = Text.translatable("menu.gamemc.description");
+
+        GameScreen.renderGround(context, infoPanelStartX, infoPanelStartY, infoPanelEndX,infoPanelEndY);
+        drawWrappedText(context, textRenderer, StringVisitable.plain(text.getString()),
+                infoPanelStartX+1, infoPanelStartY, infoPanelEndX-infoPanelStartX, infoPanelEndY-infoPanelStartY, 0xFFFFFFFF,false);
+
+        // Version check
         if (versionChecker.isReady() && versionChecker.isUpdateAvailable()) {
             String latest = versionChecker.extractModVersion(versionChecker.getLatestVersion());
 
-            int x = this.width / 2 - this.textRenderer.getWidth(Text.translatable("menu.gamemc.gui.update", latest)) / 2;
-            int y = panelY - 12;
+            int updateAlertX = this.width / 2 - this.textRenderer.getWidth(Text.translatable("menu.gamemc.gui.update", latest)) / 2;
+            int updateAlertY = listStartY - this.textRenderer.fontHeight*2;
 
-            context.drawText(
-                    this.textRenderer,
-                    Text.translatable("menu.gamemc.gui.update", latest),
-                    x,
-                    y,
-                    0xFFFFA500,
-                    true
-            );
+            context.drawText(this.textRenderer, Text.translatable("menu.gamemc.gui.update", latest), updateAlertX, updateAlertY, GameColorPalette.UPDATE_ALERT_COLOR, true);
         }
+    }
 
-
-        MinecraftClient mc = MinecraftClient.getInstance();
-        double sf = mc.getWindow().getScaleFactor();
-        int scX = (int) (listAreaX * sf);
-        int scY = (int) (mc.getWindow().getHeight() - (listAreaY + listAreaHeight) * sf);
-        int scW = (int) (listAreaWidth * sf);
-        int scH = (int) (listAreaHeight * sf);
-        RenderSystem.enableScissorForRenderTypeDraws(scX, scY, scW, scH);
-
-        int y = listAreaY - scrollOffset;
-        for (ButtonWidget btn : gameButtons) {
-            btn.setX(this.width / 2 - buttonWidth / 2);
-            btn.setY(y);
-            if (y + buttonHeight > listAreaY && y < listAreaY + listAreaHeight) {
-                btn.render(context, mouseX, mouseY, delta);
+    @Override
+    public boolean keyPressed(KeyInput input) {
+        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+            if (client != null) {
+                client.setScreen(parent);
+                return true;
             }
-            y += buttonHeight + buttonGap;
         }
-        RenderSystem.disableScissorForRenderTypeDraws();
-
-        backButton.render(context, mouseX, mouseY, delta);
-
-        // скроллбар
-        int totalBtnsHeight = (buttonHeight + buttonGap) * gameButtons.size();
-        if (totalBtnsHeight > listAreaHeight) {
-            int barX = listAreaX + listAreaWidth + 2;
-            int barY = listAreaY;
-            int barWidth = 6;
-            int barHeight = listAreaHeight;
-            context.fill(barX, barY, barX + barWidth, barY + barHeight, 0x40111111);
-
-            int handleHeight = Math.max(16, (int) ((float) barHeight * barHeight / totalBtnsHeight));
-            int handleY = (int) (barY + ((float) scrollOffset / (totalBtnsHeight - listAreaHeight)) * (barHeight - handleHeight));
-            context.fill(barX, handleY, barX + barWidth, handleY + handleHeight, 0xFF888888);
-        }
+        return super.keyPressed(input);
     }
-
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        int totalBtnsHeight = (buttonHeight + buttonGap) * gameButtons.size();
-        int maxScroll = Math.max(0, totalBtnsHeight - listAreaHeight);
-        if (mouseX > listAreaX && mouseX < listAreaX + listAreaWidth &&
-                mouseY > listAreaY && mouseY < listAreaY + listAreaHeight && maxScroll > 0) {
-            scrollOffset = clamp(scrollOffset - (int) (verticalAmount * 20), maxScroll);
-            return true;
-        }
-        return false;
-    }
-
-    private int clamp(int val, int max) {
-        return Math.max(0, Math.min(max, val));
-    }
-
-    @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
-        int y = listAreaY - scrollOffset;
-        for (ButtonWidget btn : gameButtons) {
-            if (y + buttonHeight > listAreaY && y < listAreaY + listAreaHeight) {
-                if (btn.mouseClicked(click,doubled)) return true;
-            }
-            y += buttonHeight + buttonGap;
-        }
-
-        if (backButton.mouseClicked(click,doubled)) return true;
-
-        return super.mouseClicked(click,doubled);
-    }
-
-    @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {}
 
     @Override
     public boolean shouldPause() { return false; }
+
+    @Override
+    public boolean mouseClicked(Click click, boolean doubled) {
+        for(GameWidget game : games) {
+            if (game.isHoveredPlayButton()) {
+                game.onPress(click);
+                return true;
+            }
+            if(game.isHovered()) {
+                selected = selected == game ? null : game;
+                return true;
+            }
+        }
+        return super.mouseClicked(click, doubled);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        scrollingListY = Math.min(0, Math.max(scrollingListY+verticalAmount, -maxScrollingListY));
+        scrollbar.setValue(-scrollingListY);
+        return true;
+    }
+
+    private void drawWrappedText(DrawContext context, TextRenderer textRenderer, StringVisitable text, int x, int y, int width, int height, int color, boolean shadow) {
+        int startY = y;
+        for (OrderedText orderedText : textRenderer.wrapLines(text, width)) {
+            if(y-startY+textRenderer.fontHeight > height) return;
+            context.drawText(textRenderer, orderedText, x, y, color, shadow);
+            y += 9;
+        }
+    }
 }

@@ -3,18 +3,17 @@
   "category.gamemc.keys": "GameMC",
 
   "menu.gamemc.title": "Arcade games",
-  "menu.gamemc.description": "More games coming soon...",
+  "menu.gamemc.description": "More games coming soon... \n\n* Or you can create YOUR oun minigame using us api:\n§3github.com/FanyaOff/GameMC§f",
   "menu.gamemc.select": "Select game",
   "menu.gamemc.menubtn": "Games",
+  "menu.gamemc.play": "Play",
+  "menu.gamemc.random": "Random game",
 
-  "menu.gamemc.button.snakegame": "Snake game",
-  "menu.gamemc.button.simon": "Simon says",
-  "menu.gamemc.button.2048": "2048: Tower",
-  "menu.gamemc.button.solitaire": "Solitaire",
   "menu.gamemc.gui.update": "New version available: %s",
+  "menu.gamemc.info.new_game": "New Game",
 
   "game.simon.title": "Simon Says",
-  "game.simon.button.newgame": "New game",
+  "game.simon.description": "Simon Says",
   "game.simon.sequence_length": "Sequence length: %s",
   "game.simon.best_score": "Best: %s",
   "game.simon.lose": "GAME OVER!",
@@ -22,7 +21,7 @@
   "game.simon.restart_hint": "Press \"New Game\" or R to restart",
 
   "game.snake.title": "Snake game",
-  "game.snake.button.newgame": "New Game",
+  "game.snake.description": "Snake game",
   "game.snake.score": "Score: %s",
   "game.snake.length": "Length: %s",
   "game.snake.best_score": "Best: %s",
@@ -36,8 +35,7 @@
   "game.snake.button.big": "35 × 25 (Big)",
 
   "game.2048.title": "2048: Tower",
-  "game.2048.info.back": "Back",
-  "game.2048.info.new_game": "New Game",
+  "game.2048.description": "2048: Tower",
   "game.2048.info.pause": "Pause",
   "game.2048.info.resume": "Resume",
   "game.2048.info.score": "Score: %s",
@@ -54,8 +52,7 @@
   "game.2048.info.keypause": "P - Pause",
 
   "game.solitaire.title": "Solitaire",
-  "game.solitaire.info.back": "Back",
-  "game.solitaire.info.new_game": "New Game",
+  "game.solitaire.description": "Solitaire",
   "game.solitaire.info.score": "Score: %s",
   "game.solitaire.info.best_score": "Best: %s",
   "game.solitaire.info.victory": "You win!",

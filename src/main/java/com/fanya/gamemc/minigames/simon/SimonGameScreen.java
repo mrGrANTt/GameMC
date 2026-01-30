@@ -1,23 +1,45 @@
 package com.fanya.gamemc.minigames.simon;
 
 import com.fanya.gamemc.data.GameRecords;
+import com.fanya.gamemc.minigames.MiniGame;
+import com.fanya.gamemc.screen.GameButtonWidget;
+import com.fanya.gamemc.screen.GameScreen;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.lwjgl.glfw.GLFW;
 
 
-public class SimonGameScreen extends Screen {
+public class SimonGameScreen extends GameScreen {
+    public static class SimonMiniGame implements MiniGame {
+        @Override
+        public Text getMiniGameTittle() {
+            return Text.translatable("game.simon.title");
+        }
+
+        @Override
+        public Screen getMiniGameScreen(Screen parent) {
+            return new SimonGameScreen(parent);
+        }
+
+        @Override
+        public Identifier getIcon() {
+            return COPPER_LAMP_LIT_TEXTURE;
+        }
+
+        @Override
+        public Text getDescription() {
+            return Text.translatable("game.simon.description");
+        }
+    }
 
     private static final Identifier COPPER_LAMP_TEXTURE = Identifier.ofVanilla("textures/block/copper_bulb.png");
     private static final Identifier COPPER_LAMP_LIT_TEXTURE = Identifier.ofVanilla("textures/block/copper_bulb_lit.png");
 
-    private final Screen parent;
     private SimonGame game;
     private int bestScore;
 
@@ -32,27 +54,14 @@ public class SimonGameScreen extends Screen {
     private long lastFlashTriggerTime = 0;
 
     public SimonGameScreen(Screen parent) {
-        super(Text.translatable("game.simon.title"));
-        this.parent = parent;
+        super(Text.translatable("game.simon.title"), parent);
     }
 
     @Override
     protected void init() {
+        super.init();
         bestScore = GameRecords.getInstance().getBestScore("simon");
         if (game == null) game = new SimonGame(3);
-
-        int buttonWidth = Math.min(90, this.width / 6);
-        int buttonHeight = 16;
-        int y = this.height - 28;
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("gui.back"), b -> {
-                    assert this.client != null;
-                    this.client.setScreen(parent);
-                })
-                .dimensions(this.width / 2 - buttonWidth - 4, y, buttonWidth, buttonHeight).build());
-
-        this.addDrawableChild(ButtonWidget.builder(Text.translatable("game.simon.button.newgame"), b -> game.reset())
-                .dimensions(this.width / 2 + 4, y, buttonWidth, buttonHeight).build());
 
         calculateLayout();
     }
@@ -67,8 +76,7 @@ public class SimonGameScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.renderPanoramaBackground(context, delta);
-        context.fillGradient(0, 0, this.width, this.height, 0xB0000000, 0xC0000000);
+        super.render(context, mouseX, mouseY, delta);
 
         if (game != null) game.update();
 
@@ -159,7 +167,7 @@ public class SimonGameScreen extends Screen {
 
     private void drawInfo(DrawContext context) {
         int centerX = this.width / 2;
-        int panelY = 20;
+        int panelY = GameButtonWidget.btnY+GameButtonWidget.btnHeight+GameButtonWidget.spacingBtn;
         String title = this.textRenderer.trimToWidth(Text.translatable("game.simon.title").getString(), 200);
         context.drawText(this.textRenderer, Text.literal(title), centerX - this.textRenderer.getWidth(title) / 2, panelY, 0xFF00FFFF, true);
 
@@ -190,46 +198,34 @@ public class SimonGameScreen extends Screen {
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
         if (game == null || click.button() != 0) return super.mouseClicked(click,doubled);
-        if (game.getState() == SimonGame.State.SHOWING) return false;
+        if (game.getState() != SimonGame.State.SHOWING) {
 
-        int mx = (int) click.x();
-        int my = (int) click.y();
+            int mx = (int) click.x();
+            int my = (int) click.y();
 
-        for (int i = 0; i < 4; i++) {
-            int x = centerX + i * (blockSize + spacing);
-            int y = centerY;
-            if (mx >= x && mx <= x + blockSize && my >= y && my <= y + blockSize) {
-                boolean handled = game.clickButton(i);
-                lampFlashTimes[i] = System.currentTimeMillis();
+            for (int i = 0; i < 4; i++) {
+                int x = centerX + i * (blockSize + spacing);
+                int y = centerY;
+                if (mx >= x && mx <= x + blockSize && my >= y && my <= y + blockSize) {
+                    boolean handled = game.clickButton(i);
+                    lampFlashTimes[i] = System.currentTimeMillis();
 
-                if (game.getState() == SimonGame.State.LOST) {
-                    int score = Math.max(0, game.getSequenceLength() - 1);
-                    if (score > bestScore) {
-                        bestScore = score;
-                        GameRecords.getInstance().setBestScore("simon", bestScore);
+                    if (game.getState() == SimonGame.State.LOST) {
+                        int score = Math.max(0, game.getSequenceLength() - 1);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            GameRecords.getInstance().setBestScore("simon", bestScore);
+                        }
                     }
+                    return handled || super.mouseClicked(click, doubled);
                 }
-                return handled || super.mouseClicked(click,doubled);
             }
         }
         return super.mouseClicked(click,doubled);
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
-        if (input.key() == GLFW.GLFW_KEY_R) {
-            game.reset();
-            return true;
-        } else if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
-            assert this.client != null;
-            this.client.setScreen(parent);
-            return true;
-        }
-        return super.keyPressed(input);
-    }
-
-    @Override
-    public boolean shouldPause() {
-        return false;
+    protected void reset() {
+        game.reset();
     }
 }

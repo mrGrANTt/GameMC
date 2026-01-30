@@ -1,5 +1,9 @@
 package com.fanya.gamemc;
 
+import com.fanya.gamemc.minigames._2048.Game2048Screen;
+import com.fanya.gamemc.minigames.simon.SimonGameScreen;
+import com.fanya.gamemc.minigames.snake.SnakeSizeSelectScreen;
+import com.fanya.gamemc.minigames.solitaire.SolitaireGameScreen;
 import com.fanya.gamemc.screen.GameSelectionScreen;
 import com.fanya.gamemc.util.CustomSounds;
 import net.fabricmc.api.ClientModInitializer;
@@ -25,6 +29,11 @@ public class GameMC implements ClientModInitializer {
     public void onInitializeClient() {
         LOGGER.info("GameMC initialized!");
         CustomSounds.initialize();
+
+        GameSelectionScreen.pushMiniGame(new SnakeSizeSelectScreen.SnakeMiniGame());
+        GameSelectionScreen.pushMiniGame(new Game2048Screen.Game2048MiniGame());
+        GameSelectionScreen.pushMiniGame(new SimonGameScreen.SimonMiniGame());
+        GameSelectionScreen.pushMiniGame(new SolitaireGameScreen.SolitaireMiniGame());
 
         openScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.gamemc.open_screen",

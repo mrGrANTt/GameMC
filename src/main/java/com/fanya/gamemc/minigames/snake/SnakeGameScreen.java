@@ -1,8 +1,6 @@
 package com.fanya.gamemc.minigames.snake;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
-
+import com.fanya.gamemc.screen.GameScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
@@ -11,7 +9,6 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.sound.PositionedSoundInstance;
 
-import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 
 import net.minecraft.util.Identifier;
@@ -23,13 +20,9 @@ import com.fanya.gamemc.data.GameRecords;
 
 import java.util.List;
 
-public class SnakeGameScreen extends Screen {
+public class SnakeGameScreen extends GameScreen {
     private int bestScore;
-    private final Screen parent;
     private SnakeGame game;
-
-    private final int gridWidth;
-    private final int gridHeight;
 
     private static final int MIN_CELL_SIZE = 8;
     private static final int MAX_CELL_SIZE = 28;
@@ -45,11 +38,14 @@ public class SnakeGameScreen extends Screen {
     private int gridOffsetY;
 
     public SnakeGameScreen(Screen parent, int gridWidth, int gridHeight) {
-        super(Text.translatable("game.snake.title"));
-        this.parent = parent;
-        this.gridWidth = gridWidth;
-        this.gridHeight = gridHeight;
+        super(Text.translatable("game.snake.title"), parent);
         game = new SnakeGame(gridWidth, gridHeight);
+        reset();
+
+        addUpButton(Text.translatable("game.snake.button.select_size"), button -> {
+            assert this.client != null;
+            this.client.setScreen(new SnakeSizeSelectScreen(parent));
+        });
     }
 
     @Override
@@ -64,32 +60,6 @@ public class SnakeGameScreen extends Screen {
                     PositionedSoundInstance.master(SoundEvents.ENTITY_GENERIC_EAT, 1.0F)
             );
         });
-
-        int buttonY = Math.max(this.height - 30, gridOffsetY + gridHeight * cellSize + 10);
-        int buttonWidth = Math.min(90, this.width / 6);
-        int buttonHeight = 16;
-        int spacing = 8;
-
-        this.addDrawableChild(ButtonWidget.builder(
-                ScreenTexts.BACK,
-                button -> {
-                    assert this.client != null;
-                    this.client.setScreen(this.parent);
-                }
-        ).dimensions(this.width / 2 - buttonWidth * 2 - spacing * 2, buttonY, buttonWidth, buttonHeight).build());
-
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.translatable("game.snake.button.newgame"),
-                button -> game.reset()
-        ).dimensions(this.width / 2 - buttonWidth / 2, buttonY, buttonWidth, buttonHeight).build());
-
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.translatable("game.snake.button.select_size"),
-                button -> {
-                    assert this.client != null;
-                    this.client.setScreen(new SnakeSizeSelectScreen(parent));
-                }
-        ).dimensions(this.width / 2 + buttonWidth + spacing * 2, buttonY, buttonWidth + 10, buttonHeight).build());
     }
 
     private void recalcGridLayout() {
@@ -137,10 +107,7 @@ public class SnakeGameScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.renderPanoramaBackground(context, delta);
-        context.fillGradient(0, 0, this.width, this.height,
-                0xB0000000, 0xC0000000);
-
+        super.render(context, mouseX, mouseY, delta);
         int borderSize = Math.max(2, cellSize / 8);
         context.fillGradient(
                 gridOffsetX - borderSize,
@@ -181,6 +148,11 @@ public class SnakeGameScreen extends Screen {
                 button.render(context, mouseX, mouseY, delta);
             }
         });
+    }
+
+    @Override
+    protected void reset() {
+        game.reset();
     }
 
     private void drawGrid(DrawContext context) {
@@ -383,16 +355,6 @@ public class SnakeGameScreen extends Screen {
                 game.setDirection(Direction.EAST);
                 return true;
             }
-            case GLFW.GLFW_KEY_R -> {
-                game.reset();
-                return true;
-            }
-            case GLFW.GLFW_KEY_ESCAPE -> {
-                if (this.client != null) {
-                    this.client.setScreen(this.parent);
-                }
-                return true;
-            }
         }
         return super.keyPressed(input);
     }
@@ -401,10 +363,5 @@ public class SnakeGameScreen extends Screen {
     public void resize(int width, int height) {
         super.resize(width, height);
         recalcGridLayout();
-    }
-
-    @Override
-    public boolean shouldPause() {
-        return false;
     }
 }
