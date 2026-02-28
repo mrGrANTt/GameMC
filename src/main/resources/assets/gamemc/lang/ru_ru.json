@@ -3,7 +3,7 @@
   "category.gamemc.keys": "GameMC",
 
   "menu.gamemc.title": "Аркадные игры",
-  "menu.gamemc.description": "Больше игр - скоро.. (я надеюсь)\n\n* Или ты можешь сделать ТВОЮ игру с помощью нашего api:\n§3github.com/FanyaOff/GameMC§f",
+  "menu.gamemc.description": "Больше игр - скоро.. (я надеюсь)\n\n* Или ты можешь сделать ТВОЮ игру с помощью нашего api(wip):\n§3github.com/FanyaOff/GameMC§f",
   "menu.gamemc.select": "Выберите игру",
   "menu.gamemc.menubtn": "Игры",
   "menu.gamemc.play": "Играть",
@@ -13,7 +13,7 @@
   "menu.gamemc.info.new_game": "Новая Игра",
 
   "game.simon.title": "Саймон",
-  "game.simon.description": "Саймон",
+  "game.simon.description": "Саймон\nЗадача на запоминание ритма, в которой игрокам необходимо вспомнить и повторить последовательности светящихся блоков. Каждый раунд добавляет новый элемент, постепенно увеличивая сложность.",
   "game.simon.sequence_length": "Длина последовательности: %s",
   "game.simon.best_score": "Лучший: %s",
   "game.simon.lose": "Игра окончена!",
@@ -21,7 +21,7 @@
   "game.simon.restart_hint": "Нажмите \"Новая игра\" или R для рестарта",
 
   "game.snake.title": "Змейка",
-  "game.snake.description": "Змейка",
+  "game.snake.description": "Змейка\nНовый взгляд на классический опыт игры в змейку, дополненный несколькими системами развития, адаптивной механикой и динамической системой питания.",
   "game.snake.score": "Очки: %s",
   "game.snake.length": "Длина: %s",
   "game.snake.best_score": "Лучший: %s",
@@ -35,7 +35,7 @@
   "game.snake.button.big": "35 × 25 (Большое)",
 
   "game.2048.title": "2048: Башня",
-  "game.2048.description": "2048: Башня",
+  "game.2048.description": "2048: Башня\nГоловоломка с вертикальным слиянием блоков, сочетающая в себе механику 2048 и динамику падающих блоков из Тетриса.",
   "game.2048.info.pause": "Пауза",
   "game.2048.info.resume": "Продолжить",
   "game.2048.info.score": "Очки: %s",
@@ -52,7 +52,7 @@
   "game.2048.info.keypause": "P — Пауза",
 
   "game.solitaire.title": "Косынка",
-  "game.solitaire.description": "Косынка",
+  "game.solitaire.description": "Косынка\nКласическая косынка с виндоус, но в майнкрафт",
   "game.solitaire.info.score": "Очки: %s",
   "game.solitaire.info.best_score": "Лучший результат: %s",
   "game.solitaire.info.victory": "Вы победили!",

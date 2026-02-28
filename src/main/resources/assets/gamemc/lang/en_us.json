@@ -3,7 +3,7 @@
   "category.gamemc.keys": "GameMC",
 
   "menu.gamemc.title": "Arcade games",
-  "menu.gamemc.description": "More games coming soon... \n\n* Or you can create YOUR oun minigame using us api:\n§3github.com/FanyaOff/GameMC§f",
+  "menu.gamemc.description": "More games coming soon... \n\n* Or you can create YOUR oun minigame using us api(wip):\n§3github.com/FanyaOff/GameMC§f",
   "menu.gamemc.select": "Select game",
   "menu.gamemc.menubtn": "Games",
   "menu.gamemc.play": "Play",
@@ -13,7 +13,7 @@
   "menu.gamemc.info.new_game": "New Game",
 
   "game.simon.title": "Simon Says",
-  "game.simon.description": "Simon Says",
+  "game.simon.description": "Simon Says\n\nA rhythm-memory challenge where players must recall and repeat sequences of glowing blocks. Each round adds a new element, increasing difficulty gradually.",
   "game.simon.sequence_length": "Sequence length: %s",
   "game.simon.best_score": "Best: %s",
   "game.simon.lose": "GAME OVER!",
@@ -21,7 +21,7 @@
   "game.simon.restart_hint": "Press \"New Game\" or R to restart",
 
   "game.snake.title": "Snake game",
-  "game.snake.description": "Snake game",
+  "game.snake.description": "Snake game\n\nA modernized take on the classic snake experience, enhanced with multiple progression systems, adaptive mechanics, and a fully dynamic food system.",
   "game.snake.score": "Score: %s",
   "game.snake.length": "Length: %s",
   "game.snake.best_score": "Best: %s",
@@ -35,7 +35,7 @@
   "game.snake.button.big": "35 × 25 (Big)",
 
   "game.2048.title": "2048: Tower",
-  "game.2048.description": "2048: Tower",
+  "game.2048.description": "2048: Tower\n\nA vertical block-merging puzzle that combines the mechanics of 2048 with the falling-block dynamics of Tetris.",
   "game.2048.info.pause": "Pause",
   "game.2048.info.resume": "Resume",
   "game.2048.info.score": "Score: %s",
@@ -52,7 +52,7 @@
   "game.2048.info.keypause": "P - Pause",
 
   "game.solitaire.title": "Solitaire",
-  "game.solitaire.description": "Solitaire",
+  "game.solitaire.description": "Solitaire\n\nClassic solitaire game from windows",
   "game.solitaire.info.score": "Score: %s",
   "game.solitaire.info.best_score": "Best: %s",
   "game.solitaire.info.victory": "You win!",
